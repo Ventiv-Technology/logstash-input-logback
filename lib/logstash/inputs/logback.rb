@@ -11,7 +11,7 @@ require "timeout"
 class LogStash::Inputs::Logback < LogStash::Inputs::Base
 
   config_name "logback"
-  plugin_status "experimental"
+  plugin_status 0
 
   # When mode is `server`, the address to listen on.
   # When mode is `client`, the address to connect to.
@@ -31,6 +31,18 @@ class LogStash::Inputs::Logback < LogStash::Inputs::Base
   # `client` connects to a server.
   config :mode, :validate => ["server", "client"], :default => "server"
 
+  # Location of the jar files for deserialization.  The following are required:
+  # - logback-classic
+  # - logback-core
+  # - slf4j-api
+  config :jar_location, :validate => :string, :required => true
+
+  # Version of logback to look for
+  config :logback_version, :validate => :string, :default => "1.1.1"
+
+  # Version of slfj4 to look for
+  config :slf4j_version, :validate => :string, :default => "1.7.5"
+
   def initialize(*args)
     super(*args)
   end # def initialize
@@ -39,6 +51,9 @@ class LogStash::Inputs::Logback < LogStash::Inputs::Base
   def register
     require "java"
     require "jruby/serialization"
+    require "#{@jar_location}/logback-classic-#{@logback_version}.jar"
+    require "#{@jar_location}/logback-core-#{@logback_version}.jar"
+    require "#{@jar_location}/slf4j-api-#{@slf4j_version}.jar"
 
     if server?
       @logger.info("Starting Logback input listener", :address => "#{@host}:#{@port}")
@@ -55,22 +70,24 @@ class LogStash::Inputs::Logback < LogStash::Inputs::Base
       loop do
         # NOTE: event_raw is ch.qos.logback.classic.spi.ILoggingEvent
         event_obj = ois.readObject()
-		    e = to_event(event_obj.getFormattedMessage(), event_source)
-        e.source_host = socket.peer
-        e.source_path = event_obj.getLoggerName()
+        e = LogStash::Event.new("message" => event_obj.getFormattedMessage())
+        decorate(e)
+        e["host"] = socket.peer
+        e["path"] = event_obj.getLoggerName()
         e["priority"] = event_obj.getLevel().toString()
         e["logger_name"] = event_obj.getLoggerName()
         e["thread"] = event_obj.getThreadName()
+        e["log_timestamp"] = event_obj.getTimeStamp()
 
-		# Add callerData to '@fields'
-		if event_obj.hasCallerData()
-		  if event_obj.getCallerData()[0]
-		    callerData = event_obj.getCallerData[0]
-		    e["file"] = callerData.getFileName() + ":" + callerData.getLineNumber().to_s
-		    e["class"] = callerData.getClassName()
+        # Add callerData to '@fields'
+        if event_obj.hasCallerData()
+          if event_obj.getCallerData().length > 0
+            callerData = event_obj.getCallerData[0]
+            e["file"] = callerData.getFileName() + ":" + callerData.getLineNumber().to_s
+            e["class"] = callerData.getClassName()
             e["method"] = callerData.getMethodName()
-		  end
-		end
+          end
+        end
 
         # Add the MDC context properties to '@fields'
         if event_obj.getMDCPropertyMap()
@@ -79,17 +96,18 @@ class LogStash::Inputs::Logback < LogStash::Inputs::Base
           end
         end
 
-		# Add the stackTrace to '@fields'
-		if event_obj.getThrowableProxy()
-		  tp = event_obj.getThrowableProxy()
-		  st = tp.getClassName() + ": " + tp.getMessage()
-		  if tp.getStackTraceElementProxyArray()
-			tp.getStackTraceElementProxyArray().each do |ste|
-			   st = st + "\n" + ste.getSTEAsString()
-		    end
-		  end
-		  e["stack_trace"] = st
-		end
+        # Add the stackTrace to '@fields'
+        if event_obj.getThrowableProxy()
+          tp = event_obj.getThrowableProxy()
+          st = tp.getClassName() + ": " + tp.getMessage()
+          if tp.getStackTraceElementProxyArray()
+            tp.getStackTraceElementProxyArray().each do |ste|
+              st = st + "\n" + ste.getSTEAsString()
+            end
+          end
+
+          e["stack_trace"] = st
+        end
 
         if e
           output_queue << e

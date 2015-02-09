@@ -4,6 +4,11 @@ This is a plugin for [Logstash](https://github.com/elasticsearch/logstash).
 
 It is fully free and fully open source. The license is Apache 2.0, meaning you are pretty much free to use it however you want in whatever way.
 
+This repository was largely derived from Logstash's Log4j Implementation: https://github.com/logstash-plugins/logstash-input-log4j
+
+Also, the main code was first taken from LOGSTASH-1092: https://logstash.jira.com/browse/LOGSTASH-1092
+This code seems to have been derived from the Log4J implementation anyway.
+
 ## Documentation
 
 Logstash provides infrastructure to automatically generate documentation for this plugin. We use the asciidoc format to write documentation so any comments in the source code will be first converted into asciidoc and then into html. All plugin documentation are placed under one [central location](http://www.elasticsearch.org/guide/en/logstash/current/).
@@ -83,6 +88,41 @@ gem build logstash-filter-awesome.gemspec
 bin/plugin install /your/local/plugin/logstash-filter-awesome.gem
 ```
 - Start Logstash and proceed to test the plugin
+
+## Running with Docker
+
+As a sample, I've added a Dockerfile in the root that you can build with.  This Dockerfile builds on top of pblittle/docker-logstash, which has done a great
+job being a flexible Logstash implementation for docker.  After building (docker build -t <tagName> .), please follow the directions
+from the parent (https://registry.hub.docker.com/u/pblittle/docker-logstash/) to get it running with either an embedded
+ElasticSearch, or External.  Also, there are instructions there on how to provide a logstash configuration.
+
+The following is a sample configuration (input section) you'll need to get up and running with this Dockerfile:
+
+```
+input {
+  stdin {
+    type => "stdin-type"
+  }
+
+  logback {
+    jar_location => "/opt/logstash/jars"
+    port => 4560
+  }
+}
+
+output {
+  stdout {
+    codec => rubydebug
+  }
+
+  elasticsearch {
+    embedded => true
+  }
+}
+```
+
+NOTE: The jar_location configuration.  This is important since logstash will need to be able to deserialize the Logback events properly, so
+this is where the JARs need to go (logback-core, logback-classic, slf4j-api)
 
 ## Contributing
 

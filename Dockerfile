@@ -1,8 +1,8 @@
 FROM pblittle/docker-logstash
 MAINTAINER John Crygier <john.crygier@ventivtech.com>
 
-ENV LOGBACK_VERSION 1.1.1
-ENV SLF4J_VERSION 1.7.5
+ENV LOGBACK_VERSION 1.1.3
+ENV SLF4J_VERSION 1.7.14
 
 ADD http://search.maven.org/remotecontent?filepath=ch/qos/logback/logback-classic/$LOGBACK_VERSION/logback-classic-$LOGBACK_VERSION.jar /opt/logstash/jars/logback-classic-$LOGBACK_VERSION.jar
 ADD http://search.maven.org/remotecontent?filepath=ch/qos/logback/logback-core/$LOGBACK_VERSION/logback-core-$LOGBACK_VERSION.jar /opt/logstash/jars/logback-core-$LOGBACK_VERSION.jar

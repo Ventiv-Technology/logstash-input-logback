@@ -38,10 +38,10 @@ class LogStash::Inputs::Logback < LogStash::Inputs::Base
   config :jar_location, :validate => :string, :required => true
 
   # Version of logback to look for
-  config :logback_version, :validate => :string, :default => "1.1.1"
+  config :logback_version, :validate => :string, :default => "1.1.3"
 
   # Version of slfj4 to look for
-  config :slf4j_version, :validate => :string, :default => "1.7.5"
+  config :slf4j_version, :validate => :string, :default => "1.7.14"
 
   def initialize(*args)
     super(*args)

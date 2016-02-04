@@ -26,7 +26,7 @@ Gem::Specification.new do |s|
   s.requirements << "jar 'org.slf4j:slf4j-api', '1.7.14'"
 
   # Gem dependencies
-  s.add_runtime_dependency 'logstash', '>= 2.0.0', '< 3.0.0'
+  s.add_runtime_dependency 'logstash-core', '>= 2.0.0', '< 3.0.0'
   s.add_runtime_dependency 'logstash-codec-plain'
   s.add_runtime_dependency 'jar-dependencies'
   s.add_development_dependency 'logstash-devutils'
